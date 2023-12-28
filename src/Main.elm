@@ -2,7 +2,8 @@ module Main exposing (..)
 
 import Browser
 import Html.Events exposing (onClick)
-import Html exposing (Html, text, div)
+import Html exposing (Html, text, div, time)
+import Html.Attributes exposing (class)
 import Random
 
 main : Program () Model Msg
@@ -23,8 +24,12 @@ init _ = ({ choice = Nothing,  theme = "Alone" , themes = lurumThemes }
 view : Model -> Html Msg
 view { choice } =
     case choice of
-        Nothing -> div [onClick PickNew] [text "<click> to Pick a Theme..."]
-        Just s  -> div [onClick PickNew] [text s]
+        Nothing -> div [onClick PickNew, class "container"]
+                   [ div [class "theme"]
+                         [text "<click> to Pick a Theme..."] ]
+        Just s  -> div [onClick PickNew, class "container"]
+                   [ div [class "theme"] [text s]
+                   , time [] [text "24:00:00"] ]
 
 type Msg
     = PickNew
