@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Time
 import Browser
 import Html.Events exposing (onClick)
 import Html exposing (Html, text, div, time)
@@ -12,40 +13,51 @@ main =
     { init = init, update = update, view = view, subscriptions = subscriptions }
 
 type alias Model =
-    { choice : Maybe String
-    , theme  : String
-    , themes : List String
+    { choice  : Maybe String
+    , theme   : String
+    , themes  : List String
+    , now     : Time.Posix
+    , start   : Time.Posix
+    , zone    : Time.Zone
     }
 
 init : flags -> (Model, Cmd msg)
-init _ = ({ choice = Nothing,  theme = "Alone" , themes = lurumThemes }
+init _ = ({ choice = Nothing
+          , theme  = "Alone"
+          , themes = ludumDareThemes
+          , now    = Time.millisToPosix 0
+          , start  = Time.millisToPosix 0
+          , zone   = Time.utc }
          , Cmd.none)
 
 view : Model -> Html Msg
-view { choice } =
+view { choice, start, now, zone } =
     case choice of
         Nothing -> div [onClick PickNew, class "container"]
                    [ div [class "theme"]
                          [text "<click> to Pick a Theme..."] ]
         Just s  -> div [onClick PickNew, class "container"]
-                   [ div [class "theme"] [text s]
-                   , time [] [text "24:00:00"] ]
+                   [ div [class "theme"]
+                         [text s]
+                   , time [] [text (String.fromInt ((((Time.posixToMillis now) - (Time.posixToMillis start))//1000)  ))] ]
 
 type Msg
     = PickNew
     | NewChoice String
+    | Tick Time.Posix
 
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg ({ themes, theme } as model) =
+update msg ({ themes, theme, now } as model) =
     case msg of
-        NewChoice new -> ({ model | choice = Just new }, Cmd.none)
+        Tick t        -> ({ model | now = t}, Cmd.none)
+        NewChoice new -> ({ model | choice = Just new, start = now }, Cmd.none)
         PickNew       -> (model, (Random.generate NewChoice (Random.uniform theme themes)))
 
-subscriptions : model -> Sub msg
-subscriptions _ = Sub.none
+subscriptions : model -> Sub Msg
+subscriptions _ = Time.every 1000 Tick
 
-lurumThemes : List String
-lurumThemes =
+ludumDareThemes : List String
+ludumDareThemes =
     ["Indirect interaction"
     ,"Guardian"
     ,"Construction/destruction (sheep)"
