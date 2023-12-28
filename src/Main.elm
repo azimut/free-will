@@ -30,6 +30,24 @@ init _ = ({ choice = Nothing
           , zone   = Time.utc }
          , Cmd.none)
 
+formatDigit : Int -> String
+formatDigit = String.fromInt >> String.padLeft 2 '0'
+
+formatTime : Time.Zone -> Time.Posix -> String
+formatTime zone time =
+    [ Time.toHour zone time
+    , Time.toMinute zone time
+    , Time.toSecond zone time
+    ] |> List.map formatDigit |> String.join ":"
+
+countDown : Time.Posix -> Time.Posix -> Time.Posix
+countDown now start =
+    let
+        aDayMillis = (24 * 60 * 60 * 1000) - 1 -- offset 1 to avoid 00:00:00
+        dtMillis = Time.posixToMillis now - Time.posixToMillis start
+    in
+        Time.millisToPosix (aDayMillis - dtMillis)
+
 view : Model -> Html Msg
 view { choice, start, now, zone } =
     case choice of
@@ -39,7 +57,7 @@ view { choice, start, now, zone } =
         Just s  -> div [onClick PickNew, class "container"]
                    [ div [class "theme"]
                          [text s]
-                   , time [] [text (String.fromInt ((((Time.posixToMillis now) - (Time.posixToMillis start))//1000)  ))] ]
+                   , time [] [text (countDown now start |>formatTime zone)] ]
 
 type Msg
     = PickNew
