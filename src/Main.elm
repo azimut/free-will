@@ -14,12 +14,16 @@ main =
   Browser.element
     { init = init, update = update, view = view, subscriptions = subscriptions }
 
+type Status
+    = Selected String Time.Posix Time.Posix -- choice start now
+    | Restored String Time.Posix -- choice start
+    | Waiting Time.Posix -- now
+    | New
+
 type alias Model =
-    { choice  : Maybe String
+    { status  : Status
     , theme   : String
     , themes  : List String
-    , now     : Time.Posix
-    , start   : Time.Posix
     , zone    : Time.Zone
     }
 
@@ -31,27 +35,22 @@ deFormatTime stime =
         _                              ->
             Time.millisToPosix 0
 
-decodeFlags : List (Maybe String) -> (Maybe String, Time.Posix)
+decodeFlags : List (Maybe String) -> Status
 decodeFlags flags =
     case flags of
         Just choice :: Just start :: []  ->
             case (Decode.decodeString Decode.string choice, Decode.decodeString Decode.string start) of
-                (Ok c, Ok s) -> (Just c, deFormatTime s)
-                _            -> (Nothing, Time.millisToPosix 0)
-        _ -> (Nothing, Time.millisToPosix 0)
+                (Ok c, Ok s) -> Restored c (deFormatTime s)
+                _            -> New
+        _ -> New
 
 init : List (Maybe String) -> (Model, Cmd msg)
 init flags =
-    let
-        (storedChoice, storedStart) = decodeFlags flags
-    in
-        ({ choice = storedChoice
-         , theme  = "Alone"
-         , themes = ludumDareThemes
-         , now    = Time.millisToPosix 0
-         , start  = storedStart
-         , zone   = Time.utc }
-        , Cmd.none)
+    ({ status = (decodeFlags flags)
+     , theme  = "Alone"
+     , themes = ludumDareThemes
+     , zone   = Time.utc }
+    , Cmd.none)
 
 formatDigit : Int -> String
 formatDigit = String.fromInt >> String.padLeft 2 '0'
@@ -72,15 +71,21 @@ countDown now start =
         Time.millisToPosix (aDayMillis - dtMillis)
 
 view : Model -> Html Msg
-view { choice, start, now, zone } =
-    case choice of
-        Nothing -> div [onClick PickNew, class "container"]
-                   [ div [class "theme"]
-                         [text "<click> to Pick a Theme..."] ]
-        Just s  -> div [onClick PickNew, class "container"]
-                   [ div [class "theme"]
-                         [text s]
-                   , time [] [text (countDown now start |>formatTime zone)] ]
+view { status, zone } =
+    case status of
+        Waiting _ ->
+            div [onClick PickNew, class "container"]
+                [ div [class "theme"]
+                      [text "<click> to Pick a Theme..."] ]
+        Selected choice start now ->
+            div [onClick PickNew, class "container"]
+                [ div [class "theme"]
+                      [text choice]
+                , time [] [text (countDown now start |> formatTime zone)] ]
+        _ ->
+            div [class "container"]
+                [ div [class "theme"]
+                      [text "..."] ]
 
 type Msg
     = PickNew
@@ -108,11 +113,27 @@ save : Time.Zone -> Time.Posix -> String -> Cmd msg
 save zone time choice = Cmd.batch [saveStart zone time, saveChoice choice]
 
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg ({ themes, theme, now, zone } as model) =
-    case msg of
-        Tick t        -> ({ model | now = t }, Cmd.none)
-        NewChoice new -> ({ model | choice = Just new, start = now }, save zone now new )
-        PickNew       -> (model, (Random.generate NewChoice (Random.uniform theme themes)))
+update msg ({ themes, theme, zone, status } as model) =
+    case status of
+        Waiting prev ->
+            case msg of
+                NewChoice new -> ({ model | status = Selected new prev prev }, save zone prev new )
+                Tick now      -> ({ model | status = Waiting now }, Cmd.none)
+                _             -> (  model , Cmd.none)
+        New ->
+            case msg of
+                Tick now -> ({ model | status = Waiting now }, Cmd.none)
+                _        -> (  model , Cmd.none)
+        Restored choice start ->
+            case msg of
+                Tick now -> ({ model | status = Selected choice start now }, Cmd.none)
+                _        -> (  model , Cmd.none)
+        Selected choice start prev ->
+            case msg of
+                Tick now      -> ({ model | status = Selected choice start now }, Cmd.none)
+                NewChoice new -> ({ model | status = Selected new prev prev }, save zone prev new )
+                PickNew       -> (  model , (Random.generate NewChoice (Random.uniform theme themes)))
+
 
 subscriptions : model -> Sub Msg
 subscriptions _ = Time.every 1000 Tick
