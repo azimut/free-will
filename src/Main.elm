@@ -1,5 +1,7 @@
-module Main exposing (..)
+port module Main exposing (..)
 
+import Json.Decode as Decode
+import Json.Encode as Encode
 import Time
 import Browser
 import Html.Events exposing (onClick)
@@ -7,7 +9,7 @@ import Html exposing (Html, text, div, time)
 import Html.Attributes exposing (class)
 import Random
 
-main : Program () Model Msg
+main : Program (List (Maybe String)) Model Msg
 main =
   Browser.element
     { init = init, update = update, view = view, subscriptions = subscriptions }
@@ -21,14 +23,35 @@ type alias Model =
     , zone    : Time.Zone
     }
 
-init : flags -> (Model, Cmd msg)
-init _ = ({ choice = Nothing
-          , theme  = "Alone"
-          , themes = ludumDareThemes
-          , now    = Time.millisToPosix 0
-          , start  = Time.millisToPosix 0
-          , zone   = Time.utc }
-         , Cmd.none)
+deFormatTime : String -> Time.Posix
+deFormatTime stime =
+    case (stime |> String.split ":" |> List.map String.toInt |> List.map (Maybe.withDefault 0)) of
+        hour :: minute :: second :: [] ->
+            Time.millisToPosix (second * 1000 + minute * 60 * 1000 + hour * 60 * 60 * 1000)
+        _                              ->
+            Time.millisToPosix 0
+
+decodeFlags : List (Maybe String) -> (Maybe String, Time.Posix)
+decodeFlags flags =
+    case flags of
+        Just choice :: Just start :: []  ->
+            case (Decode.decodeString Decode.string choice, Decode.decodeString Decode.string start) of
+                (Ok c, Ok s) -> (Just c, deFormatTime s)
+                _            -> (Nothing, Time.millisToPosix 0)
+        _ -> (Nothing, Time.millisToPosix 0)
+
+init : List (Maybe String) -> (Model, Cmd msg)
+init flags =
+    let
+        (storedChoice, storedStart) = decodeFlags flags
+    in
+        ({ choice = storedChoice
+         , theme  = "Alone"
+         , themes = ludumDareThemes
+         , now    = Time.millisToPosix 0
+         , start  = storedStart
+         , zone   = Time.utc }
+        , Cmd.none)
 
 formatDigit : Int -> String
 formatDigit = String.fromInt >> String.padLeft 2 '0'
@@ -64,11 +87,31 @@ type Msg
     | NewChoice String
     | Tick Time.Posix
 
+port storeChoice : String -> Cmd msg
+
+saveChoice : String -> Cmd msg
+saveChoice choice =
+    choice |>Encode.string
+           |>Encode.encode 0
+           |>storeChoice
+
+port storeStart : String -> Cmd msg
+
+saveStart : Time.Zone -> Time.Posix -> Cmd msg
+saveStart zone time =
+    formatTime zone time
+        |>Encode.string
+        |>Encode.encode 0
+        |>storeStart
+
+save : Time.Zone -> Time.Posix -> String -> Cmd msg
+save zone time choice = Cmd.batch [saveStart zone time, saveChoice choice]
+
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg ({ themes, theme, now } as model) =
+update msg ({ themes, theme, now, zone } as model) =
     case msg of
-        Tick t        -> ({ model | now = t}, Cmd.none)
-        NewChoice new -> ({ model | choice = Just new, start = now }, Cmd.none)
+        Tick t        -> ({ model | now = t }, Cmd.none)
+        NewChoice new -> ({ model | choice = Just new, start = now }, save zone now new )
         PickNew       -> (model, (Random.generate NewChoice (Random.uniform theme themes)))
 
 subscriptions : model -> Sub Msg
