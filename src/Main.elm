@@ -142,10 +142,11 @@ subscriptions : model -> Sub Msg
 subscriptions _ = Time.every 1000 Tick
 
 ludumDareThemes : List String
-ludumDareThemes =
+ludumDareThemes = -- https://en.wikipedia.org/wiki/Ludum_Dare#Results
     ["Indirect interaction"
     ,"Guardian"
-    ,"Construction/destruction (sheep)"
+    -- N/A
+    ,"Construction/destruction" -- (sheep)
     ,"Preparation – Set it up, let it go"
     ,"Infection"
     ,"Random"
@@ -157,7 +158,7 @@ ludumDareThemes =
     ,"Chain reaction"
     ,"Weird/unexpected/surprise"
     ,"Minimalist"
-    ,"The tower (owls)"
+    ,"The tower" -- (owls)
     ,"Roads"
     ,"Advancing wall of doom"
     ,"Caverns"
@@ -167,11 +168,11 @@ ludumDareThemes =
     ,"Discovery"
     ,"It's dangerous to go alone! Take this!"
     ,"Escape"
-    ,"Alone (kitten challenge)"
+    ,"Alone" -- (kitten challenge)
     ,"Tiny world"
     ,"Evolution"
-    ,"You are the villain (goat)"
-    ,"Minimalism (potato)"
+    ,"You are the villain" -- (goat)
+    ,"Minimalism" -- (potato)
     ,"10 seconds"
     ,"You only get one"
     ,"Beneath the surface"
