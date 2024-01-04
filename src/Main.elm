@@ -1,5 +1,6 @@
 port module Main exposing (..)
 
+import Loaders
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Time
@@ -74,14 +75,10 @@ view { status, zone } =
             div [onClick PickNew, class "container"]
                 [ div [class "theme"]
                       [text "<click> to Pick a Theme..."] ]
-        Restored _ _ ->
+        _ ->
             div [class "container"]
                 [ div [class "theme"]
-                      [text "..."] ]
-        New ->
-            div [class "container"]
-                [ div [class "theme"]
-                      [text "..."] ]
+                      [ Loaders.puff 50 "#000" ] ]
 
 type Msg
     = PickNew
