@@ -70,7 +70,7 @@ view { status, zone } =
             div [class "container"]
                 [ div [class "theme"]
                       [text choice]
-                , time [] [text (countDown now start |> formatTime zone)] ]
+                , time [class "timeout"] [text (countDown now start |> formatTime zone)] ]
         Waiting _ ->
             div [onClick PickNew, class "container"]
                 [ div [class "theme"]

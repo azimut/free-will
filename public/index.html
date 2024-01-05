@@ -15,17 +15,25 @@
         height: 100vh;
         margin: 0 auto;
         max-width: 1080px;
+        font-size: 3em;
       }
       .theme {
-        font-size: 3em;
         text-align: center;
+      }
+      .timeout {
+        font-size: 0.4em;
+      }
+      @media (orientation: portrait) {
+        .container {
+          font-size: 5em;
+        }
       }
     </style>
   </head>
   <body>
     <!-- <div class="container">
-         <div class="theme">What</div>
-         <time>12:00:00</time>
+         <div class="theme">Every 10 Seconds</div>
+         <time class="timeout">12:00:00</time>
          </div> -->
     <div id="app"></div>
     <script src="elm.js"></script>
