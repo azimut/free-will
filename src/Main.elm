@@ -11,7 +11,7 @@ import Random
 import Time
 
 
-main : Program (List (Maybe String)) Model Msg
+main : Program Flags Model Msg
 main =
     Browser.element
         { init = init, update = update, view = view, subscriptions = subscriptions }
@@ -32,10 +32,16 @@ type alias Model =
     }
 
 
-decodeFlags : List (Maybe String) -> Status
-decodeFlags flags =
-    case flags of
-        (Just choice) :: (Just start) :: [] ->
+type alias Flags =
+    { savedChoice : Maybe String
+    , savedStart : Maybe String
+    }
+
+
+decodeFlags : Flags -> Status
+decodeFlags { savedChoice, savedStart } =
+    case ( savedChoice, savedStart ) of
+        ( Just choice, Just start ) ->
             case ( Decode.decodeString Decode.string choice, Decode.decodeString Decode.int start ) of
                 ( Ok c, Ok s ) ->
                     Restored c (Time.millisToPosix s)
@@ -47,7 +53,7 @@ decodeFlags flags =
             New
 
 
-init : List (Maybe String) -> ( Model, Cmd msg )
+init : Flags -> ( Model, Cmd msg )
 init flags =
     ( { status = decodeFlags flags
       , theme = "Alone"

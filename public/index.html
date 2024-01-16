@@ -44,15 +44,15 @@
     <script>
       var storedStart = localStorage.getItem("free-will-start");
       console.log("retrieved start: ", storedStart);
-      var startingStart = storedStart ? JSON.parse(storedStart) : null;
+      var savedStart = storedStart ? JSON.parse(storedStart) : null;
 
       var storedChoice = localStorage.getItem("free-will-choice");
       console.log("retrieved choice: ", storedChoice);
-      var startingChoice = storedChoice ? JSON.parse(storedChoice) : null;
+      var savedChoice = storedChoice ? JSON.parse(storedChoice) : null;
 
       var app = Elm.Main.init({
         node: document.getElementById("app"),
-        flags: [startingChoice, startingStart],
+        flags: { savedChoice: savedChoice, savedStart: savedStart },
       });
 
       app.ports.storeStart.subscribe(function (start) {
