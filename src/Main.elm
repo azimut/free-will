@@ -105,7 +105,7 @@ view { status, zone } =
         Waiting _ ->
             div [ onClick PickNew, class "container" ]
                 [ div [ class "theme" ]
-                    [ text "<click> to Pick a Theme..." ]
+                    [ text "<click me>" ]
                 ]
 
         _ ->
