@@ -1,10 +1,15 @@
-public/elm.js: src/Main.elm
-	elm make src/Main.elm --output=public/elm.js
+DATASETS = $(wildcard data/*.txt)
 
-.PHONY: dev
-dev:
-	elm-live src/Main.elm --port=8080 --dir=public/ --open -- --output=public/elm.js --debug
+.PHONY: dev deps clean
 
-.PHONY: deps
-deps:
-	npm install -g elm-live
+public/elm.js: src/Main.elm src/Themes.elm
+	elm make src/Main.elm --output=public/elm.js --optimize
+
+src/Themes.elm: $(DATASETS)
+	echo 'module Themes exposing (main)' >  $@
+	echo -n 'main = '                    >> $@
+	jq --raw-input . $(DATASETS) | jq --slurp --compact-output >> $@
+
+dev:  ; elm-live src/Main.elm --dir=public/ --open -- --output=public/elm.js --debug
+deps: ; npm install -g elm-live
+clean:; rm -f src/Themes.elm public/elm.js
